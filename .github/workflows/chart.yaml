@@ -6,52 +6,52 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  publish-images:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Get the vars
-        id: vars
-        run: |
-          if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
-            echo "TAG=latest" >> $GITHUB_OUTPUT
-          else
-            echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
-          echo "GITVERSION=git-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: Login ghcr.io
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Login Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - uses: docker/setup-qemu-action@v1
-      - uses: docker/setup-buildx-action@v1
-        with:
-          driver-opts: image=moby/buildkit:master
-
-      - uses: docker/build-push-action@v2
-        name: Build & Pushing vela-workflow for Dockerhub
-        with:
-          context: .
-          file: ./Dockerfile
-          labels: |-
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          build-args: |
-            GOPROXY=https://proxy.golang.org
-            VERSION=${{ steps.vars.outputs.TAG }}
-            GIT_VERSION=${{ steps.vars.outputs.GITVERSION }}
-          tags: |-
-            docker.io/oamdev/vela-workflow:${{ steps.vars.outputs.TAG }}
-            ghcr.io/${{ github.repository_owner }}/oamdev/vela-workflow:${{ steps.vars.outputs.TAG }}
+#  publish-images:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@master
+#      - name: Get the vars
+#        id: vars
+#        run: |
+#          if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
+#            echo "TAG=latest" >> $GITHUB_OUTPUT
+#          else
+#            echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+#          fi
+#          echo "GITVERSION=git-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+#      - name: Login ghcr.io
+#        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Login Docker Hub
+#        uses: docker/login-action@v1
+#        with:
+#          username: ${{ secrets.DOCKER_USER }}
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#      - uses: docker/setup-qemu-action@v1
+#      - uses: docker/setup-buildx-action@v1
+#        with:
+#          driver-opts: image=moby/buildkit:master
+#
+#      - uses: docker/build-push-action@v2
+#        name: Build & Pushing vela-workflow for Dockerhub
+#        with:
+#          context: .
+#          file: ./Dockerfile
+#          labels: |-
+#            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+#            org.opencontainers.image.revision=${{ github.sha }}
+#          platforms: linux/amd64,linux/arm64
+#          push: ${{ github.event_name != 'pull_request' }}
+#          build-args: |
+#            GOPROXY=https://proxy.golang.org
+#            VERSION=${{ steps.vars.outputs.TAG }}
+#            GIT_VERSION=${{ steps.vars.outputs.GITVERSION }}
+#          tags: |-
+#            docker.io/oamdev/vela-workflow:${{ steps.vars.outputs.TAG }}
+#            ghcr.io/${{ github.repository_owner }}/oamdev/vela-workflow:${{ steps.vars.outputs.TAG }}
 
   publish-charts:
     env:
@@ -97,18 +97,18 @@ jobs:
       - uses: jnwng/github-app-installation-token-action@v2
         id: get_app_token
         with:
-          appId: 340472
-          installationId: 38064967
+          appId: 971285
+          installationId: 53822045
           privateKey: ${{ secrets.GH_KUBEVELA_APP_PRIVATE_KEY }}
       - name: Sync Chart Repo
         run: |
           git config --global user.email "135009839+kubevela[bot]@users.noreply.github.com"
           git config --global user.name "kubevela[bot]"
-          git clone https://x-access-token:${{ steps.get_app_token.outputs.token }}@github.com/kubevela/charts.git kubevela-charts
+          git clone https://x-access-token:${{ steps.get_app_token.outputs.token }}@github.com/dtweaveio/kubevela-charts.git kubevela-charts
           helm package $HELM_CHART --destination ./kubevela-charts/docs/
-          helm repo index --url https://kubevela.github.io/charts ./kubevela-charts/docs/
+          helm repo index --url https://charts.dtweave.com/kubevela ./kubevela-charts/docs/
           cd kubevela-charts/
           git add docs/
           chart_version=${GITHUB_REF#refs/tags/}
           git commit -m "update vela-workflow chart ${chart_version}"
-          git push https://x-access-token:${{ steps.get_app_token.outputs.token }}@github.com/kubevela/charts.git      
+          git push https://x-access-token:${{ steps.get_app_token.outputs.token }}@github.com/dtweaveio/kubevela-charts.git      
